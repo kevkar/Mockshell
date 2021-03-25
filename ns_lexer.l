@@ -42,11 +42,7 @@ $\{								{ BEGIN(capture_variable); }
 
 
 	/* Solitary metacharacters */
-\<								{ yylval.sval = yytext; return META; }
-\>								{ yylval.sval = yytext; return META; }
-\|								{ yylval.sval = yytext; return META; }
-\\								{ yylval.sval = yytext; return META; }
-\&								{ yylval.sval = yytext; return META; }
+[\<\>\|\\\&]			{ yylval.sval = yytext; return META; }				
 
 
 
