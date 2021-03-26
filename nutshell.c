@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <string.h>
 #include "ns_parser.tab.h"
 extern int yyparse();
 extern char** environ;
@@ -35,10 +36,36 @@ for (char** envVar = environ; *envVar != 0; envVar++)
     printf("%s\n", *envVar);    
 }
 
+// pwd for testing purposes
+void printWorkingDirectory()
+{
+	char cwd[PATH_MAX];
+	printf("PWD: %s",getcwd(cwd,sizeof(cwd)));
+}
+
+// for cd word
 void changeDirectory(const char* directory)
 {
-	chdir(directory);
+	char cwd[PATH_MAX];
+	getcwd(cwd,sizeof(cwd));
+	strcat(cwd,"/");
+	const char* newDir = strcat(cwd,directory);
+	chdir(newDir);
 }
+
+// for cd ..
+void goToPreviousDirectory(const char* path)
+{
+	char* last = strrchr(path,'/');
+	int index = (int)(last - path);
+	char dest[index];
+	strncpy(dest,path,index);
+	dest[index] = '\0';
+	chdir(dest);
+	printWorkingDirectory();
+}
+
+
 
 void changeDirectoryToHome()
 {
@@ -67,7 +94,7 @@ int main(int argc, char* argv[])
 	{
 		char *userName=getenv("USER");
 		printf("%s>> ",userName);
-	
+
 		yyparse();
 	}
 
