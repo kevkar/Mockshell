@@ -5,15 +5,28 @@
 #include "ns_parser.tab.h"
 extern int yyparse();
 extern char** environ;
+char* homeDirectory;
+char* path;
 
 struct Node {
 	const char* data;
 	struct Node* next;
 };
 
-struct Node* makeNode(struct Node* node, const char* chars) {
-	node = (struct Node*)malloc(sizeof(struct Node));
+struct Node* makeNode(const char* chars, struct Node* next) {
+	struct Node* node = (struct Node*)malloc(sizeof(struct Node));
 	node->data = chars;
+	node->next = next;
+}
+
+void setEnvironmentVariable(const char* variable, const char* value)
+{
+	setenv(variable,value,0);
+}
+
+void unsetEnvironmentVariable(const char* variable)
+{
+	unsetenv(variable);
 }
 
 void printEnvVariables()
@@ -27,22 +40,34 @@ void changeDirectory(const char* directory)
 	chdir(directory);
 }
 
-void setDirectoryToHome()
+void changeDirectoryToHome()
 {
 	char* home = getenv("HOME");
 	if(home)
 		changeDirectory(home);
 	else 
-		printf("There is no home!");
+		printf("There is no HOME!");
+}
+
+void executeOtherCommand(const char* path, char *const argv[], char *const envp[])
+{
+	execve(path, argv, envp);
+}
+
+void init()
+{
+	homeDirectory = getenv("HOME");
+	path = getenv("PATH");
 }
 
 int main(int argc, char* argv[])
 {
+	init();
 	while(1) 
 	{
 		char *userName=getenv("USER");
 		printf("%s>> ",userName);
-
+	
 		yyparse();
 	}
 
