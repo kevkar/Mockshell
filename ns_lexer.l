@@ -1,7 +1,7 @@
 %{
 #include "ns_parser.tab.h"
 %}
-
+%option noyywrap
 %x capture_string
 %x capture_variable
 
@@ -18,7 +18,7 @@
 
 ["]								{ BEGIN(capture_string); }
 <capture_string>[^"]*			{
-									yylval.sval = malloc(strlen(yytext));
+									yylval.sval = (char*)malloc(strlen(yytext));
 									strncpy(yylval.sval, yytext, strlen(yytext));
 									return STRING; 
 								}
@@ -29,7 +29,7 @@
 
 $\{								{ BEGIN(capture_variable); }
 <capture_variable>[A-Za-z]*		{
-									yylval.sval = malloc(strlen(yytext));
+									yylval.sval = (char*)malloc(strlen(yytext));
 									strncpy(yylval.sval, yytext, strlen(yytext));
 									return VARIABLE; 
 								}
@@ -50,42 +50,42 @@ $\{								{ BEGIN(capture_variable); }
 
 (?i:alias)						{
 									char text[] = "alias";
-									yylval.sval = malloc(strlen(text));
+									yylval.sval = (char*)malloc(strlen(text));
 									strncpy(yylval.sval, text, strlen(text));
 									return COMMAND;
 								}
 
 (?i:unalias)					{
 									char text[] = "unalias";
-									yylval.sval = malloc(strlen(text));
+									yylval.sval = (char*)malloc(strlen(text));
 									strncpy(yylval.sval, text, strlen(text));
 									return COMMAND;
 								}
 
 (?i:setenv)						{
 									char text[] = "setenv";
-									yylval.sval = malloc(strlen(text));
+									yylval.sval = (char*)malloc(strlen(text));
 									strncpy(yylval.sval, text, strlen(text));
 									return COMMAND;
 								}
 
 (?i:unsetenv)					{
 									char text[] = "unsetenv";
-									yylval.sval = malloc(strlen(text));
+									yylval.sval = (char*)malloc(strlen(text));
 									strncpy(yylval.sval, text, strlen(text));
 									return COMMAND;
 								}
 
 (?i:printenv)					{
 									char text[] = "printenv";
-									yylval.sval = malloc(strlen(text));
+									yylval.sval = (char*)malloc(strlen(text));
 									strncpy(yylval.sval, text, strlen(text));
 									return COMMAND;
 								}
 
 (?i:cd)					{
 									char text[] = "cd";
-									yylval.sval = malloc(strlen(text));
+									yylval.sval = (char*)malloc(strlen(text));
 									strncpy(yylval.sval, text, strlen(text));
 									return COMMAND;
 								}
@@ -99,7 +99,7 @@ $\{								{ BEGIN(capture_variable); }
 	/* Anything else that isn't a special command or character  */
 
 [a-zA-Z0-9]+					{ 
-									yylval.sval = malloc(strlen(yytext));
+									yylval.sval = (char*)malloc(strlen(yytext));
 									strncpy(yylval.sval, yytext, strlen(yytext));
 									return WORD; 
 								}
