@@ -2,8 +2,6 @@
 # Using flex 2.5.35
 # Using bison 2.3
 
-CC=/usr/bin/cc
-
 all: flex-config bison-config nutshparser nutshscanner nutshell nutshell-out
 	
 flex-config:
@@ -13,16 +11,16 @@ bison-config:
 	bison -d ns_parser.y
 
 nutshparser:  ns_parser.tab.c 
-	$(CC) -c ns_parser.tab.c -o ns_parser.y.o
+	g++ -c ns_parser.tab.c -o ns_parser.y.o
 
 nutshscanner:  lex.yy.c
-	$(CC) -c lex.yy.c -o nutshscanner.lex.o
+	g++ -c lex.yy.c -o nutshscanner.lex.o
 
-nutshell:  nutshell.c
-	$(CC) -g -c nutshell.c -o nutshell.o
+nutshell:  nutshell.cpp
+	g++ -c nutshell.cpp command.cpp
 
 nutshell-out: 
-	$(CC) -o nutshell nutshell.o nutshscanner.lex.o ns_parser.y.o -ll -lm -lfl
+	g++ -o nutshell nutshell.o command.o nutshscanner.lex.o ns_parser.y.o
 
 clean:
 	rm nutshell *.o lex.yy.c ns_parser.tab.c ns_parser.tab.h
