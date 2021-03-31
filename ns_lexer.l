@@ -26,7 +26,7 @@
 
 [>]								{	return GT; }
 
-[<]								{	return LT; }
+[<]								{	return LT; }		
 
 
 	/* Any character that is not a META character can be part of a word */
