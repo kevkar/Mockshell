@@ -15,7 +15,8 @@ extern std::vector<Command> command_table;
 };
 
 %token <str> WORD
-%token EOL
+%token GT
+%token LT
 
 %%
 
@@ -25,6 +26,10 @@ cmd:
 							command_table.push_back(new_command);
 						}
 	| cmd WORD			{	command_table[command_table.size()-1].args.push_back($2);
+						}
+	| cmd GT WORD		{	command_table[command_table.size()-1].output = $3;
+						}
+	| cmd LT WORD		{	command_table[command_table.size()-1].input = $3;
 						}
 	;
 

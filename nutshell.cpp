@@ -22,16 +22,16 @@ int main()
 
 	while(1) 
 	{
-		printf(">> ");
+		std::cout << std::endl << ">> ";
 		yyparse();
 
 		// Print and clear contents of the command table
-		for(int i = 0; i < command_table.size(); ++i) {
+		for(int i = 0; i < command_table.size(); ++i)
+		{
 			//print_command(command_table[i]);
 			execute_command(command_table[i]);
 		}
 		command_table.clear();
-
 	}
 
 	return 0;

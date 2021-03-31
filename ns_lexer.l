@@ -10,7 +10,7 @@
 
 	/* Ignore whitespace */
 
-[ \t\r]+						{}
+[{WHITESPACE}]+						{}
 
 	/* Store all characters found between quotes */
 
@@ -22,13 +22,15 @@
 								}
 <capture_string>["]				{ 	BEGIN(INITIAL); }
 
-
-
 (?i:bye)						{ 	exit(0); }
 
+[>]								{	return GT; }
+
+[<]								{	return LT; }
 
 
-[a-zA-Z0-9]+					{ 
+	/* Any character that is not a META character can be part of a word */
+[A-Za-z0-9\-\.]+					{ 
 									yylval.str = (char*) malloc(strlen(yytext));
 									strncpy(yylval.str, yytext, strlen(yytext));
 									return WORD; 
