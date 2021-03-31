@@ -1,5 +1,6 @@
 all:
-	flex json.l
-	bison -d json.y
-	g++ -o json main.cpp lex.yy.c json.tab.c
+	flex ns_lexer.l
+	bison -d ns_parser.y
+	g++ -c nutshell.cpp command.cpp
+	g++ -o nutshell nutshell.o command.o nutshscanner.lex.o ns_parser.y.o
 
