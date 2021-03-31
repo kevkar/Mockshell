@@ -103,13 +103,13 @@ void execute_built_in(std::string name,std::vector<char*> args) {
 		cd(name,args);
 }
 
-//return converts string to char*
+
 char* tilde_parse(char* word)
 {
 	string home = getenv("HOME");
 	string s(word);
 	s = s.substr(1);
-	s = home + s;
+	s = s[0] == '/' ? home + s : home + '/' + s;
 	
 	return strdup(s.c_str());
 }
