@@ -1,33 +1,37 @@
 %{
 #include <stdio.h>
+#include <vector>
+#include "command.h"
 
 int yylex();
 int yyerror(const char* s);
+
+extern std::vector<Command> command_table;
 %}
 
 %union
 {
-	char *sval;
+	char* str;
 };
 
-%token <sval> WORD
-%token <sval> COMMAND
-%token <sval> STRING
-%token <sval> VARIABLE
-%token <sval> META
+%token <str> WORD
 %token EOL
 
 %%
 
-sentance:
+cmd:
 	/* empty */
-	| sentance WORD		{ printf("%s\n", $2); } ;
-	| sentance COMMAND	{ printf("*%s*\n", $2); } ;
-	| sentance STRING	{ printf("%s\n", $2); } ;
-	| sentance VARIABLE	{ printf("__%s__\n", $2); } ;
-	| sentance META		{ printf("** %s **\n", $2); } ;
-	| sentance EOL
+	| WORD				{   
+							printf("WORD UPPER IS: %d\n",WORD);
+							Command new_command($1);
+							command_table.push_back(new_command);
+						}
+	| cmd WORD			{	
+							printf("WORD LOWER IS: %d\n",WORD);
+							command_table[command_table.size()-1].args.push_back($2);
+						}
 	;
+
 
 %%
 
@@ -35,3 +39,4 @@ int yyerror(const char *s) {
 	fprintf(stderr, "Error: %s\n", s);
 	return 0;
 }
+

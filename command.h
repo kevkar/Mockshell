@@ -4,6 +4,17 @@
 #include <iostream>
 #include <vector>
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sstream>
+#include <unistd.h>
+#include <algorithm>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <map>
+
+using namespace std;
 
 struct Command {
 	char* command_name;

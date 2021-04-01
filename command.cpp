@@ -1,17 +1,9 @@
 #include "command.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
-#include <algorithm>
-#include <sys/types.h>
-#include <sys/wait.h>
-
-using namespace std;
+#include "tables.h"
 
 extern std::vector<std::string> built_in_cmds;
+extern map<string,string> variableMap;
+
 
 // Debugging fuction to print a command (remove from final)
 void print_command(Command c)
@@ -40,18 +32,23 @@ void print_command(Command c)
 
 void setEnvironmentVariable(const char* variable, const char* value)
 {
-	setenv(variable,value,0);
+	variableMap[variable] = value;
+	//setenv(variable,value,0);
 }
 
 void printEnvVariables()
 {
-for (char** envVar = environ; *envVar != 0; envVar++)
-    printf("%s\n", *envVar);    
+	for (auto iter = variableMap.begin(); iter != variableMap.end(); iter++ )
+		cout << iter->first << ":" << iter->second << endl;
+
+	//for (char** envVar = environ; *envVar != 0; envVar++)
+    //	printf("%s\n", *envVar);    
 }
 
 void unsetEnvironmentVariable(const char* variable)
 {
-	unsetenv(variable);
+	variableMap.erase(variable);
+	//unsetenv(variable);
 }
 
 
@@ -98,7 +95,7 @@ void execute_built_in(std::string name,std::vector<char*> args) {
 	else if (name == "setenv")
 		setEnvironmentVariable(args[0],args[1]);
 	else if (name == "unsetenv")
-		unsetenv(args[0]);
+		unsetEnvironmentVariable(args[0]);
 	else if (name == "cd")
 		cd(name,args);
 }
@@ -176,7 +173,6 @@ bool has_valid_env_variable(char* word)
 		s.find("}") != string::npos) 
 		return true;
 
-	cout << "not a valid env variable" << endl;
 	return false;
 }
 
@@ -194,8 +190,6 @@ char* transform_env_variable(char* word)
 
 	int startIndex = s.find(dollarBracket);
 	int endIndex = s.find(closeBracket);
-	cout << "start at index: " << startIndex << endl;
-	cout << "end index: " << endIndex << endl;
 
 	string begin = s.substr(0,startIndex);
 	string middle = s.substr(startIndex+2,endIndex - startIndex - 2);
@@ -217,7 +211,7 @@ void execute_command(Command cmd)
 	std::string name(cmd.command_name);
 	
 	for (int i = 0; i < cmd.args.size(); i++)
-		cout << "arg " << i << ": " << cmd.args[i] << endl;
+		cout << "arg before " << i << ": " << cmd.args[i] << endl;
 	
 	for (int i = 0; i < cmd.args.size(); i++)
 	{
@@ -226,7 +220,7 @@ void execute_command(Command cmd)
 	}
 
 	for (int i = 0; i < cmd.args.size(); i++)
-		cout << "arg " << i << ": " << cmd.args[i] << endl;
+		cout << "arg after" << i << ": " << cmd.args[i] << endl;
 
 	if (std::find(built_in_cmds.begin(), built_in_cmds.end(), name) != built_in_cmds.end()) {
 		execute_built_in(name,cmd.args);
