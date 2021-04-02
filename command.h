@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <map>
+#include "Alias.h"
 
 using namespace std;
 
@@ -53,6 +54,12 @@ void printEnvVariables();
 void unsetEnvironmentVariable(const char* variable);
 void changeDirectory(const char* directory);
 void changeDirectoryToHome();
+void printAliases();
+void doAlias(std::string name, std::vector<char*> args);
+void setAlias(std::vector<char*> args);
+char* transform_alias(char* name);
+void unAlias(std::vector<char*> args);
+bool wouldMakeInfiniteLoop(char* name, int depth);
 
 bool is_available(std::string file);
 bool is_readable(std::string file);

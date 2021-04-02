@@ -23,7 +23,10 @@ cmd:
 	/* empty */
 	| WORD				{   
 							printf("WORD UPPER IS: %d\n",WORD);
-							Command new_command($1);
+							char* first = $1;
+							first = transform_alias(first);
+							
+							Command new_command(first);
 							command_table.push_back(new_command);
 						}
 	| cmd WORD			{	

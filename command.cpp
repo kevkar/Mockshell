@@ -3,6 +3,8 @@
 
 extern std::vector<std::string> built_in_cmds;
 extern map<string,string> variableMap;
+extern map<string,string> aliasTable;
+extern vector<Alias> aliases;
 
 
 // Debugging fuction to print a command (remove from final)
@@ -195,13 +197,97 @@ char* transform_env_variable(char* word)
 	string middle = s.substr(startIndex+2,endIndex - startIndex - 2);
 	const char* var = strdup(middle.c_str());
 
-	string variable(getenv(var));
+	string value = variableMap[var];
 
 	string end = s.substr(endIndex + 1,n - endIndex);
 	
-	res += begin + variable + end;
+	res += begin + value + end;
 
 	return strdup(res.c_str());
+}
+
+
+void printAliases()
+{
+	if (aliases.size() == 0)
+	{
+		cout << "No aliases to show!" << endl;
+		return;
+	}
+		
+	cout << "List of aliases" << endl;
+	for (int i = 0; i < aliases.size(); i++)
+		cout  << aliases[i].key << " : " << aliases[i].value << endl;
+	
+
+}
+
+void doAlias(std::string name, std::vector<char*> args)
+{
+	if (args.size() == 0)
+		printAliases();
+	else
+		setAlias(args);
+}
+
+void setAlias(std::vector<char*> args)
+{
+	if (args.size() > 2 || args[0] == args[1])
+	{
+		cout << "Invalid setting of alias!" << endl;
+		return;
+	}
+
+	string key = args[0];
+	string value = args[1];
+	aliasTable[key] = value;
+	if (wouldMakeInfiniteLoop(strdup(value.c_str()),10))
+	{
+		cout << "Adding alias would make infinite loop!!!" << endl;
+		aliasTable.erase(key);
+		return;
+	}
+
+	string nested_command(transform_alias(strdup(value.c_str())));
+		
+	Alias alias(key,value,nested_command);
+	aliases.push_back(alias);
+
+}
+
+char* transform_alias(char* name)
+{
+
+	string word(name);
+	for (auto iter = aliasTable.begin(); iter != aliasTable.end(); iter++)
+		if (iter->first == word)
+			return transform_alias(strdup(iter->second.c_str()));
+	
+	return name;
+}
+
+bool wouldMakeInfiniteLoop(char* name, int depth)
+{
+	if (depth == 0)
+		return true;
+
+	string word(name);
+	for (auto iter = aliasTable.begin(); iter != aliasTable.end(); iter++)
+		if (iter->first == word)
+			return wouldMakeInfiniteLoop(strdup(iter->second.c_str()),depth-1);
+
+	return false;
+	
+}
+
+void unAlias(std::vector<char*> args)
+{
+	if (args.size() > 1)
+		{
+			cout << "Too many arguments for unalias!" << endl;
+			return;
+		}
+	aliasTable.erase(args[0]);
 }
 
 void execute_command(Command cmd)
@@ -209,13 +295,19 @@ void execute_command(Command cmd)
 	print_command(cmd);
 	
 	std::string name(cmd.command_name);
-	
+
+	if (name == "alias")
+		doAlias(name,cmd.args);
+
+	if (name == "unalias")
+		unAlias(cmd.args);
+
 	for (int i = 0; i < cmd.args.size(); i++)
 		cout << "arg before " << i << ": " << cmd.args[i] << endl;
 	
 	for (int i = 0; i < cmd.args.size(); i++)
 	{
-		cmd.args[i] = transform_env_variable(cmd.args[i]);
+		//cmd.args[i] = transform_env_variable(cmd.args[i]);
 		cmd.args[i] = do_parse(cmd.args[i]);
 	}
 
