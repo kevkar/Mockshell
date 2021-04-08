@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "global.h"
 #include "ns_parser.tab.h"
 #include "command.h"
 
@@ -11,8 +12,11 @@ extern int yyparse();
 char* PATH;
 char* HOME;
 
-std::vector<Command> command_table;
+bool DEBUG;
+
 std::vector<std::string> built_in_cmds;
+
+Command_Table* cmd_tbl;
 
 void shell_init();
 
@@ -20,18 +24,22 @@ int main()
 {
 	shell_init();
 
-	while(1) 
+	while(1)
 	{
-		std::cout << std::endl << ">> ";
+		std::cout << ">> ";
 		yyparse();
 
-		// Print and clear contents of the command table
-		for(int i = 0; i < command_table.size(); ++i)
-		{
-			//print_command(command_table[i]);
-			execute_command(command_table[i]);
-		}
-		command_table.clear();
+		// DEBUG: Print Command Table
+		if (DEBUG) { print_command_table(cmd_tbl); }
+		if (DEBUG) { std::cout << std::endl << std::endl; }
+
+		if(DEBUG) { std::cout << "----- Starting Command -----" << std::endl << std::endl; }
+
+		process_command_table(cmd_tbl);
+
+		if(DEBUG) { std::cout << "----- Command Finished -----" << std::endl << std::endl; }
+
+		cmd_tbl->reset();
 	}
 
 	return 0;
@@ -39,6 +47,10 @@ int main()
 
 void shell_init() 
 {
+	DEBUG = true;
+
+	cmd_tbl = new Command_Table();
+
 	HOME = getenv("HOME");
 	PATH = getenv("PATH");
 
