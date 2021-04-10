@@ -34,6 +34,11 @@ void print_command(Command c)
 
 void setEnvironmentVariable(std::vector<char*> args)
 {
+	if (args.size() > 2)
+	{
+		cout << "Too many arguments! No variable set." << endl;
+		return;
+	}
 	variableMap[args[0]] = args[1];
 	//setenv(variable,value,0);
 }
@@ -41,7 +46,7 @@ void setEnvironmentVariable(std::vector<char*> args)
 void printEnvVariables()
 {
 	for (auto iter = variableMap.begin(); iter != variableMap.end(); iter++ )
-		cout << iter->first << ":" << iter->second << endl;
+		cout << iter->first << " : " << iter->second << endl;
 
 	//for (char** envVar = environ; *envVar != 0; envVar++)
     //	printf("%s\n", *envVar);    
@@ -49,6 +54,16 @@ void printEnvVariables()
 
 void unsetEnvironmentVariable(const char* variable)
 {
+	bool found = false;
+	for (auto iter = variableMap.begin(); iter != variableMap.end(); iter++ )
+		if (iter->first == variable) found = true;
+
+	if (!found)
+	{
+		cout << "No variable with name " << variable << " exists.";
+		return;
+	}
+		
 	variableMap.erase(variable);
 	//unsetenv(variable);
 }
@@ -215,8 +230,6 @@ void printAliases()
 	cout << "List of aliases" << endl;
 	for (int i = 0; i < aliases.size(); i++)
 		cout  << aliases[i].key << " : " << aliases[i].value << endl;
-	
-
 }
 
 void doAlias(std::string name, std::vector<char*> args)
