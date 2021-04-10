@@ -32,9 +32,9 @@ void print_command(Command c)
 	return;
 }
 
-void setEnvironmentVariable(const char* variable, const char* value)
+void setEnvironmentVariable(std::vector<char*> args)
 {
-	variableMap[variable] = value;
+	variableMap[args[0]] = args[1];
 	//setenv(variable,value,0);
 }
 
@@ -52,7 +52,6 @@ void unsetEnvironmentVariable(const char* variable)
 	variableMap.erase(variable);
 	//unsetenv(variable);
 }
-
 
 void changeDirectory(const char* directory)
 {
@@ -94,14 +93,13 @@ void cd(std::string name, std::vector<char*> args)
 void execute_built_in(std::string name,std::vector<char*> args) {
 	if (name == "printenv")
 		printEnvVariables();
-	else if (name == "setenv")
-		setEnvironmentVariable(args[0],args[1]);
+//	else if (name == "setenv")
+//		setEnvironmentVariable(args[0],args[1]);
 	else if (name == "unsetenv")
 		unsetEnvironmentVariable(args[0]);
 	else if (name == "cd")
 		cd(name,args);
 }
-
 
 char* tilde_parse(char* word)
 {
@@ -112,7 +110,6 @@ char* tilde_parse(char* word)
 	
 	return strdup(s.c_str());
 }
-
 
 char* dot_dot_parse(char* word)
 {
@@ -252,7 +249,6 @@ void setAlias(std::vector<char*> args)
 		
 	Alias alias(key,value,nested_command);
 	aliases.push_back(alias);
-
 }
 
 char* transform_alias(char* name)
@@ -301,6 +297,13 @@ void execute_command(Command cmd)
 
 	if (name == "unalias")
 		unAlias(cmd.args);
+
+	if (name == "setenv")
+	{
+		setEnvironmentVariable(cmd.args);
+	}
+
+	
 
 	for (int i = 0; i < cmd.args.size(); i++)
 		cout << "arg before " << i << ": " << cmd.args[i] << endl;
@@ -383,7 +386,6 @@ void execute_command(Command cmd)
 	// Process in background (if & present)
 
 }
-
 
 
 bool is_available(std::string file)
