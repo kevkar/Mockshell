@@ -16,24 +16,33 @@
 
 ["]								{	BEGIN(capture_string); }
 <capture_string>[^"]*			{
-									yylval.str = (char*) malloc(strlen(yytext));
-									strncpy(yylval.str, yytext, strlen(yytext));
+									yylval.str = strdup(yytext);
 									return WORD;
 								}
 <capture_string>["]				{ 	BEGIN(INITIAL); }
 
 (?i:bye)						{ 	exit(0); }
 
-[>]								{	return GT; }
 
-[<]								{	return LT; }		
+">>"							{ 	return GTGT; }
+
+">"								{	return GT; }
+
+"<"								{	return LT; }		
+
+"|"								{	return PIPE; }
+
+"&"								{ 	return AMP; }
+
+"2>&1"							{	return ERR_STDOUT; }
+
+"2>"							{ 	return ERR_FILE; }
 
 
 	/* Any character that is not a META character can be part of a word */
-[A-Za-z0-9\-\.]+					{ 
-									yylval.str = (char*) malloc(strlen(yytext));
-									strncpy(yylval.str, yytext, strlen(yytext));
-									return WORD; 
+[A-Za-z0-9\-\.\/]+					{ 
+									yylval.str = strdup(yytext);
+									return WORD;
 								}
 
 
@@ -41,3 +50,5 @@
 
 \n								{ return 0; }
 
+	/* Exit nutshell when EOF is reached */
+<<EOF>>							{  exit(0); }

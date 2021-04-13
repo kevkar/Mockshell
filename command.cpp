@@ -1,3 +1,4 @@
+#include "global.h"
 #include "command.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,175 +13,307 @@
 #include <fstream>
 #include <fcntl.h>
 
-extern std::vector<std::string> built_in_cmds;
-
-// Debugging fuction to print a command (remove from final)
-void print_command(Command c)
+void process_command_table(Command_Table* tbl)
 {
-	std::cout << "Command name: " << c.command_name << std::endl;
-
-	if(c.args.size() > 0) {
-		std::cout << "Arguments:" << std::endl;
-		for(int i = 0; i < c.args.size(); i++)
-		{
-			std::cout << " -> " << c.args[i];
-		}
-		std::cout << std::endl;
-	}
-
-	if(c.input != nullptr) {
-		std::cout << "Input File: " << c.input << std::endl;
-	}
-
-	if(c.output != nullptr) {
-		std::cout << "Output File: " << c.output << std::endl;
-	}
-
-	return;
-}
-
-
-void execute_command(Command cmd)
-{
-	std::string name(cmd.command_name);
-
-	if (std::find(built_in_cmds.begin(), built_in_cmds.end(), name) != built_in_cmds.end()) {
-		std::cout << "Built-in Command Found!" << std::endl;
-		return;
-	}
-
-	std::string p(getenv("PATH"));
-	std::stringstream paths(p);
-	std::string test_path;
-
-	while (std::getline(paths, test_path, ':'))
+	// Validate and setup arguments for each command
+	for(int i = 0; i < tbl->num_cmds; ++i)
 	{
-		test_path = test_path + "/" + cmd.command_name;
-
-		// Returns 0 if file is accessible, -1 if not
-		if (is_available(test_path))
+		if(!verify_command_and_args(tbl->command[i]))
 		{
-			cmd.command_path = (char*)malloc(test_path.length() + 1);
-			strcpy(cmd.command_path, test_path.c_str());
-
-			break;
+			std::cout << "Error: Command cannot be executed" << std::endl;
+			return;
 		}
 	}
+
+	// Stored copies of stdin/stdout file descriptors to restore after finished
+	int stdin = dup(0);
+	int stdout = dup(1);
+	int stderr = dup(2);
 	
-	if (cmd.command_path == nullptr)
-	{
-		std::cout << "Error: Command not found in PATH" << std::endl;
-		return;
-	}
-
-	// Fork child process
 	pid_t pid;
-	pid = fork();
+	int in_file;
+	int out_file;
+	int e_file;
 
-	if (pid < 0)
+	// Redirect stderr if file is set
+	if (tbl->err_file != nullptr)
 	{
-		std::cout << "Unable to fork new process" << std::endl;
-		return;
-	}
-	// If child process
-	else if (pid == 0)
-	{
-		// Create argument array for execution
-		int n = cmd.args.size() + 2;
-		char* args[n];
-
-		args[0] = cmd.command_path;
-
-		for(int i = 1; i <= cmd.args.size(); i++) {
-			args[i] = cmd.args[i-1];
+		// Check if files exists or is writable
+		if (access(tbl->err_file, F_OK) != 0 || access(tbl->err_file, W_OK) == 0) {
+			e_file = open(tbl->err_file, O_WRONLY | O_CREAT | O_TRUNC);
+			
+			// Redirect stderr to file
+			dup2(e_file, 2);
+			close(e_file);
 		}
+		else
+		{
+			std::cout << "ERROR: User does not have write permission to file \'" << tbl->output << "\'" << std::endl;
+			return;
+		}
+	}
 
-		args[n-1] = NULL;
+
+	// Setup input if there in a file, else set as stdin
+	if (tbl->input != nullptr)
+	{
+		// Check if file exists
+		if (access(tbl->input, F_OK) != 0) {
+			std::cout << "ERROR: Input file \'" << tbl->input << "\' does not exist" << std::endl;
+			return;
+		}
+		// Check if file is readable
+		else if (access(tbl->input, R_OK) != 0){
+			std::cout << "ERROR: User does not have read access to input file \'" << tbl->input << "\'" << std::endl;
+			return;
+		}
+		// Set file descriptor to input file
+		else {
+			in_file = open(tbl->input, O_RDONLY);
+		}
+	}
+	else
+	{
+		in_file = dup(stdin);
+	}
 
 
-		// If there is an output file for the command
-		if (cmd.output != nullptr) {
-			// If file doesn't exists create it, if it does exist check for write permission
-			if (access(cmd.output, F_OK) != 0 || access(cmd.output, W_OK) == 0) {
-				// Changes file descriptor 
-				int fd = open(cmd.output, O_WRONLY | O_CREAT | O_TRUNC);
-				dup2(fd, 1);
-				close(fd);
+
+	// For each command in table, redirect input/output then execute command
+	for(int i = 0; i < tbl->num_cmds; ++i)
+	{	
+		// Redirect Command Input (from file or previous command)
+		dup2(in_file, 0);
+		close(in_file);
+
+		// If last command, redirect output
+		if(i == tbl->num_cmds - 1) {
+			// Check if an output file was set
+			if (tbl->output != nullptr)
+			{
+				// Check if files exists or is writable
+				if (access(tbl->output, F_OK) != 0 || access(tbl->output, W_OK) == 0) {
+					// If appending to end of existing file
+					if (tbl->append_output)
+					{
+						out_file = open(tbl->output, O_WRONLY | O_APPEND);
+					}
+					// Else open existing file to write over, or create if it doesn't exist
+					else
+					{
+						out_file = open(tbl->output, O_WRONLY | O_CREAT | O_TRUNC);
+					}
+					// Redirect output from stdout to opened file
+					dup2(out_file, 1);
+
+					// Redirect stderr to same output if 2>&1 parameter present
+					if(tbl->err_stdout)
+					{	
+						dup2(out_file, 2);
+					}
+					
+					close(out_file);
+				}
+				else
+				{
+					std::cout << "ERROR: User does not have write permission to file \'" << tbl->output << "\'" << std::endl;
+					return;
+				}
 			}
+			// If no input file was specified, set output to stdout
 			else
 			{
-				std::cout << "ERROR: User does not have write permission to file \'" << cmd.output << "\'" << std::endl;
+				out_file = dup(stdout);
 			}
 		}
+		// If not last command
+		else
+		{
+			// Create pipe and redirect input/output
+			int cmd_pipe[2];
+			if(pipe(cmd_pipe) < 0)
+			{
+				std::cout << "ERROR: Failed to create pipe" << std::endl;
+				return;
+			}
 
-
-		// If there is an input file for the command
-		if (cmd.input != nullptr) {
-			// Check if file is accessible, then if it is readable
-			if (access(cmd.input, F_OK) != 0) {
-				std::cout << "ERROR: Input file \'" << cmd.input << "\' does not exist" << std::endl;
-			}
-			else if (access(cmd.input, R_OK) != 0){
-				std::cout << "ERROR: User does not have read access to Input file \'" << cmd.input << "\'" << std::endl;
-			}
-			else {
-				// Changes file descriptor 
-				int fd = open(cmd.input, O_RDONLY);
-				dup2(fd, 0);
-				close(fd);
-			}
+			in_file = cmd_pipe[0];
+			out_file = cmd_pipe[1];
 		}
 
+		// Redirect comand output (to file or pipe to other command)
+		dup2(out_file, 1);
+		close(out_file);
 
-		// Execute command
-		execv(args[0], args);
+		// Create a child process
+		pid = fork();
 
-		// Exit child process
-		exit(0);
+		// If child process, run command
+		if (pid == 0)
+		{
+			if (execv(tbl->command[i]->args[0], tbl->command[i]->args) < 0)
+				{
+					// Exit if error occurs executing command
+					exit(0);
+				}
+		}
 	}
-	// If parent Process
-	else {
-		// Wait for child process to finish
-		wait(0);
+
+	// Parent Process
+	// Restore stdin and stdout, close input/output to end command	
+	dup2(stdin, 0);
+	dup2(stdout, 1);
+	dup2(stderr, 2);
+	close(in_file);
+	close(out_file);
+	close(e_file);
+
+	// If backgrounding not set, wait for children to finish
+	if(tbl->wait_for_exec)
+	{
+		int status;
+		waitpid(pid, &status, 0);
 	}
+
 	return;
-
-
-	// TO DO:
-	// Input Files
-	// Pipes to other commands
-	// Processing in background (if & present)
-
 }
 
 
+// Function verifies comand exists and user has permission to execute,
+// and adds valid path to command struct and args[0]
+bool verify_command_and_args(Command* c)
+{
+	std::string name(c->command_name);
 
+	// If command starts with . replace it with current current directory
+	if (name.at(0) == '.')
+	{
+		char cwd[PATH_MAX];
+		getcwd(cwd, PATH_MAX);
+
+		name.erase(name.begin(), name.begin() + 1);
+		
+		name = std::string(cwd) + name;
+	}
+
+	// If command starts with /, check and set as command path
+	if (name.at(0) == '/')
+	{
+		// If command exists at location, add to arguments array
+		if (is_available(name))
+		{
+			char* path = (char*)malloc(name.length() + 1);
+			strcpy(path, name.c_str());
+			c->args[0] = path;
+		}
+		else
+		{
+			std::cout << "Error: Command not found at: " << name << std::endl;
+			return false;
+		}
+	}
+
+	// Search for command using PATH directories
+	else
+	{
+		std::string p(getenv("PATH"));
+		std::stringstream paths(p);
+		std::string test_path;
+
+		while (std::getline(paths, test_path, ':'))
+		{
+			test_path = test_path + "/" + name;
+
+			// Returns 0 if file is accessible, -1 if not
+			if (is_available(test_path))
+			{
+				// If command exists, put command path in argument array
+				char* path = (char*)malloc(test_path.length() + 1);
+				strcpy(path, test_path.c_str());
+				c->args[0] = path;
+
+				break;
+			}
+		}
+		
+		// If not valid path for command was found, print error
+		if (c->args[0] == nullptr)
+		{
+			std::cout << "Error: Command not found in PATH directories" << std::endl;
+			return false;
+		}
+	}
+
+	// Check if user has permission to execute command
+	if (access(c->args[0], X_OK) != 0)
+	{
+		std::cout << "Error: User does not have permission to execute command" << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
+
+// Returns true if the provide string points to an existing file
 bool is_available(std::string file)
 {
 	return access(file.c_str(), F_OK) == 0;
 }
 
-bool is_readable(std::string file)
+
+// Debugging fuction to print a command (remove from final)
+void print_command_table(Command_Table* tbl)
 {
-	return access(file.c_str(), R_OK) == 0;
+	std::cout << std::endl;
+	std::cout << "Command Table with " << tbl->num_cmds << " Command(s):" << std::endl;
+	
+	std::cout << " -> Input file: ";
+	if(tbl->input != nullptr) { std::cout << tbl->input << std::endl; }
+	else { std::cout << "None" << std::endl; }
+
+	std::cout << " -> Output file: ";
+	if(tbl->output != nullptr) { std::cout << tbl->output << std::endl; }
+	else { std::cout << "None" << std::endl; }
+
+	std::cout << "  -> Append Output? ";
+	if(tbl->append_output) { std::cout << "Yes" << std::endl; }
+	else { std::cout << "No" << std::endl; }
+
+	std::cout << " -> Error file: ";
+	if(tbl->err_file != nullptr) { std::cout << tbl->err_file << std::endl; }
+	else { std::cout << "None" << std::endl; }
+
+	std::cout << "  -> Errors to stdout? ";
+	if(tbl->err_stdout) { std::cout << "Yes" << std::endl; }
+	else { std::cout << "No" << std::endl; }
+
+	std::cout << " -> Background execution? ";
+	if(tbl->wait_for_exec) { std::cout << "No" << std::endl; }
+	else { std::cout << "Yes" << std::endl; }
+
+	std::cout << std::endl;
+
+	for(int i = 0; i < tbl->num_cmds; ++i)
+	{
+		Command* c = tbl->command[i];
+		std::cout << "Command " << i << ": " << c->command_name << std::endl;
+
+		for(int j = 0; j < 10; ++j)
+		{
+			if (c->args[j] == nullptr)
+			{
+				std::cout << " -> Argument " << j << ": (Null)" << std::endl;
+			}
+			else {
+				std::cout << " -> Argument " << j << ": " << c->args[j] << std::endl;
+			}
+		}
+	}
+
+	std::cout << std::endl;
+
+	return;
 }
 
-bool is_writeable(std::string file)
-{
-	return access(file.c_str(), W_OK) == 0;
-}
 
-bool is_executable(std::string file)
-{
-	return access(file.c_str(), X_OK) == 0;
-}
-
-
-/* Refereneces Used
-https://www.geeksforgeeks.org/tokenizing-a-string-cpp/
-https://www.geeksforgeeks.org/access-command-in-linux-with-examples/
-
-I/O Redirects
-https://homepages.uc.edu/~thomam/Intro_Unix_Text/IO_Redir_Pipes.html
-http://www.rozmichelle.com/pipes-forks-dups/
-*/
