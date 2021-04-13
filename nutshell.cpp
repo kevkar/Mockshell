@@ -12,11 +12,10 @@ extern int yyparse();
 char* PATH;
 char* HOME;
 
-bool DEBUG;
+Command_Table* cmd_tbl;
 
 std::vector<std::string> built_in_cmds;
 
-Command_Table* cmd_tbl;
 
 void shell_init();
 
@@ -29,16 +28,7 @@ int main()
 		std::cout << ">> ";
 		yyparse();
 
-		// DEBUG: Print Command Table
-		if (DEBUG) { print_command_table(cmd_tbl); }
-		if (DEBUG) { std::cout << std::endl << std::endl; }
-
-		if(DEBUG) { std::cout << "----- Starting Command -----" << std::endl << std::endl; }
-
 		process_command_table(cmd_tbl);
-
-		if(DEBUG) { std::cout << "----- Command Finished -----" << std::endl << std::endl; }
-
 		cmd_tbl->reset();
 	}
 
@@ -47,7 +37,6 @@ int main()
 
 void shell_init() 
 {
-	DEBUG = true;
 
 	cmd_tbl = new Command_Table();
 

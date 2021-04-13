@@ -50,3 +50,5 @@
 
 \n								{ return 0; }
 
+	/* Exit nutshell when EOF is reached */
+<<EOF>>							{  exit(0); }

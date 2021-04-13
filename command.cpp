@@ -28,11 +28,31 @@ void process_command_table(Command_Table* tbl)
 	// Stored copies of stdin/stdout file descriptors to restore after finished
 	int stdin = dup(0);
 	int stdout = dup(1);
-
+	int stderr = dup(2);
 	
 	pid_t pid;
 	int in_file;
 	int out_file;
+	int e_file;
+
+	// Redirect stderr if file is set
+	if (tbl->err_file != nullptr)
+	{
+		// Check if files exists or is writable
+		if (access(tbl->err_file, F_OK) != 0 || access(tbl->err_file, W_OK) == 0) {
+			e_file = open(tbl->err_file, O_WRONLY | O_CREAT | O_TRUNC);
+			
+			// Redirect stderr to file
+			dup2(e_file, 2);
+			close(e_file);
+		}
+		else
+		{
+			std::cout << "ERROR: User does not have write permission to file \'" << tbl->output << "\'" << std::endl;
+			return;
+		}
+	}
+
 
 	// Setup input if there in a file, else set as stdin
 	if (tbl->input != nullptr)
@@ -50,39 +70,49 @@ void process_command_table(Command_Table* tbl)
 		// Set file descriptor to input file
 		else {
 			in_file = open(tbl->input, O_RDONLY);
-			if(DEBUG) { std::cout << "(*) Set in_file to input file." << std::endl; }
 		}
 	}
 	else
 	{
 		in_file = dup(stdin);
-		if(DEBUG) { std::cout << "(*) Set input to stdin" << std::endl; }
 	}
+
+
 
 	// For each command in table, redirect input/output then execute command
 	for(int i = 0; i < tbl->num_cmds; ++i)
-	{
-		if(DEBUG) { std::cout << "(*) Command " << i << std::endl; }
-
+	{	
 		// Redirect Command Input (from file or previous command)
 		dup2(in_file, 0);
 		close(in_file);
-		if(DEBUG) { std::cout << "(*) Redirected input" << std::endl; }
 
 		// If last command, redirect output
 		if(i == tbl->num_cmds - 1) {
-			if(DEBUG) { std::cout << "(*) Last command found" << std::endl; }
 			// Check if an output file was set
 			if (tbl->output != nullptr)
 			{
-				if(DEBUG) { std::cout << "(*) Output file foundwc" << std::endl; }
 				// Check if files exists or is writable
 				if (access(tbl->output, F_OK) != 0 || access(tbl->output, W_OK) == 0) {
-					// Redirect output from stdout to file 
-					out_file = open(tbl->output, O_WRONLY | O_CREAT | O_TRUNC);
+					// If appending to end of existing file
+					if (tbl->append_output)
+					{
+						out_file = open(tbl->output, O_WRONLY | O_APPEND);
+					}
+					// Else open existing file to write over, or create if it doesn't exist
+					else
+					{
+						out_file = open(tbl->output, O_WRONLY | O_CREAT | O_TRUNC);
+					}
+					// Redirect output from stdout to opened file
 					dup2(out_file, 1);
+
+					// Redirect stderr to same output if 2>&1 parameter present
+					if(tbl->err_stdout)
+					{	
+						dup2(out_file, 2);
+					}
+					
 					close(out_file);
-					if(DEBUG) { std::cout << "(*) Set out_file to output file" << std::endl; }
 				}
 				else
 				{
@@ -94,7 +124,6 @@ void process_command_table(Command_Table* tbl)
 			else
 			{
 				out_file = dup(stdout);
-				if(DEBUG) { std::cout << "(*) Set output to stdout" << std::endl; }
 			}
 		}
 		// If not last command
@@ -104,20 +133,17 @@ void process_command_table(Command_Table* tbl)
 			int cmd_pipe[2];
 			if(pipe(cmd_pipe) < 0)
 			{
-				if(DEBUG) { std::cout << "Failed to create pipe" << std::endl; }
+				std::cout << "ERROR: Failed to create pipe" << std::endl;
 				return;
 			}
 
 			in_file = cmd_pipe[0];
 			out_file = cmd_pipe[1];
-
-			if(DEBUG) { std::cout << "(*) Pipe created for command " << i << std::endl; }
 		}
 
 		// Redirect comand output (to file or pipe to other command)
 		dup2(out_file, 1);
 		close(out_file);
-		if(DEBUG) { std::cout << "(*) Redirected output" << std::endl; }
 
 		// Create a child process
 		pid = fork();
@@ -125,11 +151,9 @@ void process_command_table(Command_Table* tbl)
 		// If child process, run command
 		if (pid == 0)
 		{
-			if(DEBUG) { std::cout << "(*) Child executing " << tbl->command[i]->args[0] << " command" << std::endl; }
 			if (execv(tbl->command[i]->args[0], tbl->command[i]->args) < 0)
 				{
 					// Exit if error occurs executing command
-					if(DEBUG) { std::cout << "(*) Child error occurred" << std::endl; }
 					exit(0);
 				}
 		}
@@ -139,22 +163,38 @@ void process_command_table(Command_Table* tbl)
 	// Restore stdin and stdout, close input/output to end command	
 	dup2(stdin, 0);
 	dup2(stdout, 1);
+	dup2(stderr, 2);
 	close(in_file);
 	close(out_file);
+	close(e_file);
 
 	// If backgrounding not set, wait for children to finish
-	int status;
-	waitpid(pid, &status, 0);
-	if(DEBUG) { std::cout << "(*) Parent finished waiting" << std::endl; }
+	if(tbl->wait_for_exec)
+	{
+		int status;
+		waitpid(pid, &status, 0);
+	}
 
 	return;
 }
+
 
 // Function verifies comand exists and user has permission to execute,
 // and adds valid path to command struct and args[0]
 bool verify_command_and_args(Command* c)
 {
 	std::string name(c->command_name);
+
+	// If command starts with . replace it with current current directory
+	if (name.at(0) == '.')
+	{
+		char cwd[PATH_MAX];
+		getcwd(cwd, PATH_MAX);
+
+		name.erase(name.begin(), name.begin() + 1);
+		
+		name = std::string(cwd) + name;
+	}
 
 	// If command starts with /, check and set as command path
 	if (name.at(0) == '/')
