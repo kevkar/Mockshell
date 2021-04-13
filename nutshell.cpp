@@ -6,16 +6,20 @@
 #include "global.h"
 #include "ns_parser.tab.h"
 #include "command.h"
+#include <map>
 
 extern int yyparse();
 
 char* PATH;
 char* HOME;
 
-Command_Table* cmd_tbl;
+bool DEBUG;
 
 std::vector<std::string> built_in_cmds;
+std::map<std::string,std::string> variableMap;
+std::map<std::string,std::string> aliasTable;
 
+Command_Table* cmd_tbl;
 
 void shell_init();
 
@@ -28,7 +32,18 @@ int main()
 		std::cout << ">> ";
 		yyparse();
 
+		std::cout << std::endl;
+
+		// DEBUG: Print Command Table
+		//if (DEBUG) { print_command_table(cmd_tbl); }
+		//if (DEBUG) { std::cout << std::endl << std::endl; }
+
+		//if(DEBUG) { std::cout << "----- Starting Command -----" << std::endl << std::endl; }
+
 		process_command_table(cmd_tbl);
+
+		//if(DEBUG) { std::cout << "----- Command Finished -----" << std::endl << std::endl; }
+
 		cmd_tbl->reset();
 	}
 
@@ -37,11 +52,15 @@ int main()
 
 void shell_init() 
 {
+	DEBUG = false;
 
 	cmd_tbl = new Command_Table();
 
 	HOME = getenv("HOME");
 	PATH = getenv("PATH");
+
+	variableMap["HOME"] = HOME;
+	variableMap["PATH"] = PATH;
 
 	built_in_cmds.push_back("setenv");
 	built_in_cmds.push_back("printenv");
