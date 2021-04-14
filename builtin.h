@@ -10,7 +10,6 @@ void print_aliases(Command_Table*);
 void set_alias(std::string, std::string);
 void remove_alias(std::string key);
 
-char* transform_alias(char*);
 bool would_make_infinite_loop(char*, int);
 
 void change_directory(char*);
