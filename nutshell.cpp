@@ -3,17 +3,16 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include "global.h"
 #include "ns_parser.tab.h"
 #include "command.h"
-#include <map>
+#include "builtin.h"
 
 extern int yyparse();
 
 char* PATH;
 char* HOME;
-
-bool DEBUG;
 
 std::vector<std::string> built_in_cmds;
 std::map<std::string,std::string> variableMap;
@@ -32,18 +31,12 @@ int main()
 		std::cout << ">> ";
 		yyparse();
 
+		// Temp fix for ENDLINE parsing error (Jon will fix)
 		std::cout << std::endl;
-
-		// DEBUG: Print Command Table
-		//if (DEBUG) { print_command_table(cmd_tbl); }
-		//if (DEBUG) { std::cout << std::endl << std::endl; }
-
-		//if(DEBUG) { std::cout << "----- Starting Command -----" << std::endl << std::endl; }
 
 		process_command_table(cmd_tbl);
 
-		//if(DEBUG) { std::cout << "----- Command Finished -----" << std::endl << std::endl; }
-
+		// After command is finished executing, clear command table and free memory
 		cmd_tbl->reset();
 	}
 
@@ -52,8 +45,6 @@ int main()
 
 void shell_init() 
 {
-	DEBUG = false;
-
 	cmd_tbl = new Command_Table();
 
 	HOME = getenv("HOME");
