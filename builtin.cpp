@@ -149,23 +149,10 @@ void set_alias(std::string key, std::string value)
 		
 		return;
 	}
-
-	// TODO: Why is this called here? What does it do?
-	std::string nested_command(transform_alias(strdup(value.c_str())));
 	return;
 }
 
-// TODO: What does this function do? Was this for checking infinite loops?
-char* transform_alias(char* name)
-{
-	std::string word(name);
 
-	for (auto iter = aliasTable.begin(); iter != aliasTable.end(); iter++)
-		if (iter->first == word)
-			return transform_alias(strdup(iter->second.c_str()));
-	
-	return name;
-}
 
 // Repeatedly evaluates an alias to determine if it is part of a looping definition
 bool would_make_infinite_loop(char* name, int depth)
