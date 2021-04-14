@@ -3,8 +3,12 @@
 #include <string>
 #include "ns_parser.tab.h"
 #include "global.h"
+#include <dirent.h>
+#include "unistd.h"
+#include <algorithm>
 
 int countForAlias = 0;
+bool tryingToUnset = false;
 
 bool is_alias(std::string word)
 {
@@ -77,6 +81,168 @@ char* transform_env_variable(char* word)
 	return strdup(res.c_str());
 }
 
+bool hasQuestionMark(char* word)
+{
+	std::string s(word);
+	for (int i = 0; i < s.length(); i++)
+		if (s[i] == '?')
+			return true;	
+	return false;
+}
+
+bool hasAsterisk(char* word)
+{
+	std::string s(word);
+	for (int i = 0; i < s.length(); i++)
+		if (s[i] == '*')
+			return true;	
+	return false;
+}
+
+//gets files from cwd only
+std::vector<std::string> getFiles()
+{
+	std::vector<std::string> res;
+
+	char currentDirectory[PATH_MAX];
+	getcwd(currentDirectory,sizeof(currentDirectory));
+
+	if (auto dir = opendir(currentDirectory)) {
+    	while (auto f = readdir(dir)) {
+			if (f->d_name[0] == '.') continue;
+			res.push_back(f->d_name);
+   		 }
+   		 closedir(dir);
+	}
+
+	return res;
+}
+
+// matches if ? is in place of character
+bool isMatchQuestion(std::string word, std::string s)
+{
+	if (word.length() != s.length()) return false;
+	int index;
+	for (int i = 0; i < s.size(); i++)
+		if (s[i] == '?')
+		{
+			index = i;
+			break;
+		}
+			
+	int before = index - 1;
+	int after = index + 1;
+
+	for (int i = 0; i < before; i++)
+	{
+		if (word[i] != s[i])
+			return false;
+	}
+
+	int length = std::min(s.length(),word.length());
+	for (int i = after; i < length; i++)
+	{
+		if (word[i] != s[i])
+			return false;
+	}
+	return true;
+}
+
+// removes wildcard character if there are no matches
+char* removeWildcardChar(char* word)
+{
+	int index = 0;
+	std::string res = "";
+	std::string s(word);
+	for (int i = 0; i < s.length();i++)
+		if (s[i] == '?' || s[i] == '*')
+		{
+			index = i;
+			break;
+		}
+
+	for (int i = 0; i < index; i++)
+		res += s[i];
+	
+	for (int i = index + 1; i < s.length(); i++)
+		res += s[i];
+	
+	return strdup(res.c_str());
+}
+
+
+char* transformQuestionWildcard(char* word)
+{
+	std::string res = "";
+	std::string s(word);
+	
+	std::vector<std::string> fileNames = getFiles();
+
+	for (int i = 0; i < fileNames.size(); i++)
+	{
+		if (isMatchQuestion(fileNames[i],s))
+			res += fileNames[i];
+			res += " ";
+	}
+
+	if (res == "")
+	{
+		std::cout << "CALLING REMOVE " << std::endl;
+		return removeWildcardChar(word);
+	}
+		
+	return strdup(res.c_str());
+}
+
+// matches if everything before or after * matches
+bool matchAsterisk(std::string word, std::string s)
+{
+	if (s[0] == '*' && s[s.length() -1] == '*')
+		return true;
+	if (s[0] == '*')
+	{
+		int lastIndex = word.length() - 1;
+		for (int i = s.length() -1; i > 0; i--)
+		{
+			if (s[i] != word[lastIndex])
+				return false;
+			lastIndex--;
+		}
+	}
+
+	if (s[s.length() -1] == '*')
+	{
+		for (int i = 0; i < s.length() -1; i++)
+		{
+			if (s[i] != word[i])
+				return false;
+		}
+	}
+	return true;
+}
+
+char* transformAsteriskWildcard(char* word)
+{
+	std::string res = "";
+	std::string s(word);
+
+	std::vector<std::string> fileNames = getFiles();
+
+	for (int i = 0; i < fileNames.size(); i++)
+	{
+		if (matchAsterisk(fileNames[i],s))
+		{
+			res += fileNames[i];
+			res += " ";
+		}
+	}
+
+	if (res == "")
+		return removeWildcardChar(word);
+
+	return strdup(res.c_str());
+}
+
 
 %}
 
@@ -144,7 +310,7 @@ char* transform_env_variable(char* word)
 
 
 	/* Any character that is not a META character can be part of a word */
-[\-\{\}\.\~\$\(\)\/a-zA-Z0-9]+	{ 
+[\\?*\-\{\}\.\~\$\(\)\/a-zA-Z0-9\_]+	{ 
 									if (is_alias(yytext) && countForAlias == 0)
 									{
 										char* yycopy = strdup(aliasTable[yytext].c_str());
@@ -161,7 +327,23 @@ char* transform_env_variable(char* word)
                           	 			free( yycopy );
 																		
 									}
-									else
+									else if (hasQuestionMark(yytext))
+									{
+										yytext = transformQuestionWildcard(yytext);
+										std::cout << "YYTEXT IS: " << yytext << std::endl;
+										char* yycopy = yytext;																			
+										for (int i = strlen(yytext) - 1; i >= 0; --i )
+												unput( yycopy[i] );										                              	
+                          	 			free( yycopy );
+									} else	if (hasAsterisk(yytext))
+									{
+										yytext = transformAsteriskWildcard(yytext);
+										char* yycopy = yytext;																			
+										for (int i = strlen(yytext) - 1; i >= 0; --i )
+												unput( yycopy[i] );										                              	
+                          	 			free( yycopy );
+										
+									}	else										
 									{
 										yylval.str = strdup(yytext);
 										return WORD;
