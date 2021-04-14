@@ -181,16 +181,16 @@ char* transformQuestionWildcard(char* word)
 	for (int i = 0; i < fileNames.size(); i++)
 	{
 		if (isMatchQuestion(fileNames[i],s))
+		{
 			res += fileNames[i];
 			res += " ";
+		}
+
 	}
 
 	if (res == "")
-	{
-		std::cout << "CALLING REMOVE " << std::endl;
 		return removeWildcardChar(word);
-	}
-		
+	
 	return strdup(res.c_str());
 }
 
