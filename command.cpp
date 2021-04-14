@@ -1,5 +1,3 @@
-#include "global.h"
-#include "command.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,15 +10,31 @@
 #include <sys/wait.h>
 #include <fstream>
 #include <fcntl.h>
+#include "global.h"
+#include "limits.h"
+#include "command.h"
+#include "builtin.h"
+
+extern std::vector<std::string> built_in_cmds;
+
+
+// TODO: Make sure to use PATH variable from dictionary, not global
 
 void process_command_table(Command_Table* tbl)
 {
+	std::string name(tbl->command[0]->command_name);
+
+	// If command is a built-in command, send to built-in command processor
+ 	if (std::find(built_in_cmds.begin(), built_in_cmds.end(), name) != built_in_cmds.end()) {
+ 		built_in_command_dispatcher(tbl);
+ 		return;
+ 	}
+
 	// Validate and setup arguments for each command
 	for(int i = 0; i < tbl->num_cmds; ++i)
 	{
 		if(!verify_command_and_args(tbl->command[i]))
 		{
-			std::cout << "Error: Command cannot be executed" << std::endl;
 			return;
 		}
 	}
@@ -188,12 +202,8 @@ bool verify_command_and_args(Command* c)
 	// If command starts with . replace it with current current directory
 	if (name.at(0) == '.')
 	{
-		char cwd[PATH_MAX];
-		getcwd(cwd, PATH_MAX);
-
-		name.erase(name.begin(), name.begin() + 1);
-		
-		name = std::string(cwd) + name;
+		c->command_name = parse_dot(c->command_name);
+		name = c->command_name;
 	}
 
 	// If command starts with /, check and set as command path
@@ -216,12 +226,17 @@ bool verify_command_and_args(Command* c)
 	// Search for command using PATH directories
 	else
 	{
-		std::string p(getenv("PATH"));
+		std::string p = variableMap["PATH"];
 		std::stringstream paths(p);
 		std::string test_path;
 
 		while (std::getline(paths, test_path, ':'))
 		{
+			if(test_path.at(0) == '.')
+			{
+				test_path = parse_dot(strdup(test_path.c_str()));
+			}
+
 			test_path = test_path + "/" + name;
 
 			// Returns 0 if file is accessible, -1 if not
