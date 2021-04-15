@@ -252,7 +252,7 @@ char* transformAsteriskWildcard(char* word)
 
 	/* Ignore whitespace */
 
-[{WHITESPACE}]+						{}
+[ ]+						{}
 
 	/* Store all characters found between quotes */
 
