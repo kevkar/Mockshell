@@ -123,8 +123,11 @@ void print_aliases(Command_Table *tbl)
 }
 
 // Create alias from provided values, checking for loops
-void set_alias(std::string key, std::string value)
+void set_alias(char* k, char* v)
 {
+	std::string key(k);
+	std::string value(v);
+
 	// Check if alias currently exists
 	std::string existingValue = "0";
 	std::map<std::string, std::string>::iterator itr = aliasTable.find(key);
@@ -170,8 +173,9 @@ bool would_make_infinite_loop(char* name, int depth)
 }
 
 // Remove alias from dictionary if it exists
-void remove_alias(std::string key)
+void remove_alias(char* k)
 {	
+	std::string key(k);
 	bool found = false;
 
 	for (auto iter = aliasTable.begin(); iter != aliasTable.end(); iter++)
@@ -365,8 +369,11 @@ char* parse_tilde(char* input)
 // TODO: Add Logic Here to parse values for ~, expand if present
 
 // Adds given variable and associated value to the dictionary
-void set_env_variable(std::string variable, std::string value)
+void set_env_variable(schar* var, char* val)
 {
+	std::string variable(var);
+	std::string value(val);
+
 	if(variable == "PATH") {
 		std::string p = value;
 		std::stringstream paths(p);
@@ -397,8 +404,10 @@ void set_env_variable(std::string variable, std::string value)
 }
 
 // Removes given variable from dictionary unless it doesn't exists or is PATH/HOME
-void unset_env_variable(std::string variable)
+void unset_env_variable(char* v)
 {
+	std::string variable(v);
+
 	if (variable == "PATH" || variable == "HOME")
 	{
 		std::cout << "ERROR: Cannot unset " << variable << " variable!" << std::endl;

@@ -7,8 +7,8 @@
 void built_in_command_dispatcher(Command_Table*);
 
 void print_aliases(Command_Table*);
-void set_alias(std::string, std::string);
-void remove_alias(std::string key);
+void set_alias(char*, char*);
+void remove_alias(char*);
 
 bool would_make_infinite_loop(char*, int);
 
@@ -20,8 +20,8 @@ char* parse_dot(char*);
 char* parse_dot_dot(char*);
 char* parse_tilde(char*);
 
-void set_env_variable(std::string, std::string);
-void unset_env_variable(std::string variable);
+void set_env_variable(char*, char*);
+void unset_env_variable(char*);
 void print_env_variables(Command_Table*);
 
 #endif

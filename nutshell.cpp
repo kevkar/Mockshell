@@ -11,9 +11,6 @@
 
 extern int yyparse();
 
-char* PATH;
-char* HOME;
-
 std::vector<std::string> built_in_cmds;
 std::map<std::string,std::string> variableMap;
 std::map<std::string,std::string> aliasTable;
@@ -47,11 +44,8 @@ void shell_init()
 {
 	cmd_tbl = new Command_Table();
 
-	HOME = getenv("HOME");
-	PATH = getenv("PATH");
-
-	variableMap["HOME"] = HOME;
-	variableMap["PATH"] = PATH;
+	variableMap["HOME"] = getenv("HOME");
+	variableMap["PATH"] = getenv("PATH");
 
 	built_in_cmds.push_back("setenv");
 	built_in_cmds.push_back("printenv");

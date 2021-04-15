@@ -17,9 +17,6 @@
 
 extern std::vector<std::string> built_in_cmds;
 
-
-// TODO: Make sure to use PATH variable from dictionary, not global
-
 void process_command_table(Command_Table* tbl)
 {
 	std::string name(tbl->command[0]->command_name);
