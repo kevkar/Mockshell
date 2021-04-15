@@ -27,13 +27,7 @@ int main()
 	{
 		std::cout << ">> ";
 		yyparse();
-
-		// DEBUG feature to see comands input from external file
-		if (true)
-		{
-			print_commands(cmd_tbl);
-			std::cout << std::endl;
-		}
+		std::cout << std::endl;
 		
 		process_command_table(cmd_tbl);
 

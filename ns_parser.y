@@ -102,8 +102,6 @@ command:
 								cmd_tbl->command[cmd_tbl->num_cmds] = new_cmd;
 								cmd_tbl->num_cmds += 1;
 
-								printf("TODO: Auto Complete for Filename/Username")
-
 							}
 	| WORD					{ 	Command* new_cmd = new Command();
 								new_cmd->command_name = $1;
