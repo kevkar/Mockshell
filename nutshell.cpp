@@ -28,9 +28,13 @@ int main()
 		std::cout << ">> ";
 		yyparse();
 
-		// Temp fix for ENDLINE parsing error (Jon will fix)
-		std::cout << std::endl;
-
+		// DEBUG feature to see comands input from external file
+		if (true)
+		{
+			print_commands(cmd_tbl);
+			std::cout << std::endl;
+		}
+		
 		process_command_table(cmd_tbl);
 
 		// After command is finished executing, clear command table and free memory
