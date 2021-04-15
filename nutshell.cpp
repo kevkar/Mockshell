@@ -11,9 +11,6 @@
 
 extern int yyparse();
 
-char* PATH;
-char* HOME;
-
 std::vector<std::string> built_in_cmds;
 std::map<std::string,std::string> variableMap;
 std::map<std::string,std::string> aliasTable;
@@ -31,9 +28,13 @@ int main()
 		std::cout << ">> ";
 		yyparse();
 
-		// Temp fix for ENDLINE parsing error (Jon will fix)
-		std::cout << std::endl;
-
+		// DEBUG feature to see comands input from external file
+		if (true)
+		{
+			print_commands(cmd_tbl);
+			std::cout << std::endl;
+		}
+		
 		process_command_table(cmd_tbl);
 
 		// After command is finished executing, clear command table and free memory
@@ -47,11 +48,8 @@ void shell_init()
 {
 	cmd_tbl = new Command_Table();
 
-	HOME = getenv("HOME");
-	PATH = getenv("PATH");
-
-	variableMap["HOME"] = HOME;
-	variableMap["PATH"] = PATH;
+	variableMap["HOME"] = getenv("HOME");
+	variableMap["PATH"] = getenv("PATH");
 
 	built_in_cmds.push_back("setenv");
 	built_in_cmds.push_back("printenv");

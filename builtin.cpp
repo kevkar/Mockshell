@@ -21,8 +21,6 @@ extern std::vector<std::string> built_in_cmds;
 extern std::map<std::string,std::string> variableMap;
 extern std::map<std::string,std::string> aliasTable;
 
-// COMMAND TO RETURN TO PARSER -> PRINTENV
-// printEnvVariables();
 
 void built_in_command_dispatcher(Command_Table *tbl)
 {
@@ -123,8 +121,11 @@ void print_aliases(Command_Table *tbl)
 }
 
 // Create alias from provided values, checking for loops
-void set_alias(std::string key, std::string value)
+void set_alias(char* k, char* v)
 {
+	std::string key(k);
+	std::string value(v);
+
 	// Check if alias currently exists
 	std::string existingValue = "0";
 	std::map<std::string, std::string>::iterator itr = aliasTable.find(key);
@@ -170,8 +171,9 @@ bool would_make_infinite_loop(char* name, int depth)
 }
 
 // Remove alias from dictionary if it exists
-void remove_alias(std::string key)
+void remove_alias(char* k)
 {	
+	std::string key(k);
 	bool found = false;
 
 	for (auto iter = aliasTable.begin(); iter != aliasTable.end(); iter++)
@@ -362,11 +364,12 @@ char* parse_tilde(char* input)
 }
 
 
-// TODO: Add Logic Here to parse values for ~, expand if present
-
 // Adds given variable and associated value to the dictionary
-void set_env_variable(std::string variable, std::string value)
+void set_env_variable(char* var, char* val)
 {
+	std::string variable(var);
+	std::string value(val);
+
 	if(variable == "PATH") {
 		std::string p = value;
 		std::stringstream paths(p);
@@ -376,14 +379,18 @@ void set_env_variable(std::string variable, std::string value)
 		// Check each path between : to see if tilde expansion is necessary
 		while (std::getline(paths, test_path, ':'))
 		{
-			if(test_path.at(0) == '~')
+			if (test_path.at(0) == '~')
 			{
 				test_path = parse_tilde(strdup(test_path.c_str()));
+			}
+			else if (test_path.at(0) == '.')
+			{
+				test_path = parse_dot(strdup(test_path.c_str()));
 			}
 
 			newValue += test_path + ":";
 		}
-		// Remove last :
+		// Remove last ':'
 		newValue.pop_back();
 
 		variableMap[variable] = newValue;
@@ -396,9 +403,12 @@ void set_env_variable(std::string variable, std::string value)
 	return;
 }
 
+
 // Removes given variable from dictionary unless it doesn't exists or is PATH/HOME
-void unset_env_variable(std::string variable)
+void unset_env_variable(char* v)
 {
+	std::string variable(v);
+
 	if (variable == "PATH" || variable == "HOME")
 	{
 		std::cout << "ERROR: Cannot unset " << variable << " variable!" << std::endl;
@@ -464,8 +474,3 @@ void print_env_variables(Command_Table* tbl)
 
 	return;
 }
-
-
-
-
-
