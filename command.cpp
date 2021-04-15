@@ -165,6 +165,7 @@ void process_command_table(Command_Table* tbl)
 			if (execv(tbl->command[i]->args[0], tbl->command[i]->args) < 0)
 				{
 					// Exit if error occurs executing command
+					std::cout << "ERROR: Command \'" << tbl->command[i]->command_name << "/' failed to execute" << std::endl;
 					exit(0);
 				}
 		}
@@ -328,6 +329,7 @@ void print_command_table(Command_Table* tbl)
 	return;
 }
 
+// Debugging function used to print commands when running from an external file
 void print_commands(Command_Table* tbl)
 {
 	for(int i = 0; i < tbl->num_cmds; ++i)

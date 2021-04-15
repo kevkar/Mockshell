@@ -252,7 +252,7 @@ char* transformAsteriskWildcard(char* word)
 
 	/* Ignore whitespace */
 
-[ ]+						{}
+[ \t]+							{ }
 
 	/* Store all characters found between quotes */
 
@@ -261,6 +261,7 @@ char* transformAsteriskWildcard(char* word)
 									yylval.str = strdup(yytext);
 									return WORD;
 								}
+
 <capture_string>["]				{ 	BEGIN(INITIAL); }
 
 (?i:bye)						{ 	printf("Goodbye!\n");
@@ -330,7 +331,6 @@ char* transformAsteriskWildcard(char* word)
 									else if (hasQuestionMark(yytext))
 									{
 										yytext = transformQuestionWildcard(yytext);
-										std::cout << "YYTEXT IS: " << yytext << std::endl;
 										char* yycopy = yytext;																			
 										for (int i = strlen(yytext) - 1; i >= 0; --i )
 												unput( yycopy[i] );										                              	
