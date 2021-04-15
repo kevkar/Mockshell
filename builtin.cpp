@@ -21,8 +21,6 @@ extern std::vector<std::string> built_in_cmds;
 extern std::map<std::string,std::string> variableMap;
 extern std::map<std::string,std::string> aliasTable;
 
-// COMMAND TO RETURN TO PARSER -> PRINTENV
-// printEnvVariables();
 
 void built_in_command_dispatcher(Command_Table *tbl)
 {
@@ -366,8 +364,6 @@ char* parse_tilde(char* input)
 }
 
 
-// TODO: Add Logic Here to parse values for ~, expand if present
-
 // Adds given variable and associated value to the dictionary
 void set_env_variable(char* var, char* val)
 {
@@ -383,14 +379,18 @@ void set_env_variable(char* var, char* val)
 		// Check each path between : to see if tilde expansion is necessary
 		while (std::getline(paths, test_path, ':'))
 		{
-			if(test_path.at(0) == '~')
+			if (test_path.at(0) == '~')
 			{
 				test_path = parse_tilde(strdup(test_path.c_str()));
+			}
+			else if (test_path.at(0) == '.')
+			{
+				test_path = parse_dot(strdup(test_path.c_str()));
 			}
 
 			newValue += test_path + ":";
 		}
-		// Remove last :
+		// Remove last ':'
 		newValue.pop_back();
 
 		variableMap[variable] = newValue;
@@ -402,6 +402,7 @@ void set_env_variable(char* var, char* val)
 	
 	return;
 }
+
 
 // Removes given variable from dictionary unless it doesn't exists or is PATH/HOME
 void unset_env_variable(char* v)
@@ -473,8 +474,3 @@ void print_env_variables(Command_Table* tbl)
 
 	return;
 }
-
-
-
-
-
