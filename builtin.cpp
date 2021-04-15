@@ -369,7 +369,7 @@ char* parse_tilde(char* input)
 // TODO: Add Logic Here to parse values for ~, expand if present
 
 // Adds given variable and associated value to the dictionary
-void set_env_variable(schar* var, char* val)
+void set_env_variable(char* var, char* val)
 {
 	std::string variable(var);
 	std::string value(val);

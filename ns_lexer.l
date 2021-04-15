@@ -310,7 +310,7 @@ char* transformAsteriskWildcard(char* word)
 
 
 	/* Any character that is not a META character can be part of a word */
-[\\?*\-\{\}\.\~\$\(\)\/a-zA-Z0-9\_]+	{ 
+[\\?:\*\-\{\}\.\~\$\(\)\/a-zA-Z0-9\_]+	{ 
 									if (is_alias(yytext) && countForAlias == 0)
 									{
 										char* yycopy = strdup(aliasTable[yytext].c_str());
