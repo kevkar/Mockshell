@@ -331,4 +331,59 @@ void print_command_table(Command_Table* tbl)
 	return;
 }
 
+void print_commands(Command_Table* tbl)
+{
+	for(int i = 0; i < tbl->num_cmds; ++i)
+	{
+		Command* c = tbl->command[i];
+		std::cout << c->command_name;
 
+		for(int j = 0; j < 10; ++j)
+		{
+			if (c->args[j] != nullptr)
+			{
+				std::cout << " " << c->args[j];
+			}
+		}
+
+		if(i+1 < tbl->num_cmds)
+		{
+			std::cout << " | ";
+		}
+
+	}
+	
+	if(tbl->input != nullptr)
+	{
+		std::cout << " < " << tbl->input;
+	}
+
+	if(tbl->output != nullptr)
+	{ 
+		if(tbl->append_output)
+		{
+			std::cout << " >> " << tbl->output;
+		}
+		else
+		{
+			std::cout << " > " << tbl->output;
+		}
+	}
+
+	if(tbl->err_file != nullptr)
+	{
+		std::cout << " 2>" << tbl->err_file;
+	}
+
+	if(tbl->err_stdout)
+	{ 
+		std::cout << " 2>&1";
+	}
+
+	if(!tbl->wait_for_exec)
+	{ 
+		std::cout << " &";
+	}
+
+	return;
+}

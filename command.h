@@ -86,6 +86,7 @@ struct Command_Table
 
 
 void print_command_table(Command_Table*);
+void print_commands(Command_Table*);
 
 void process_command_table(Command_Table*);
 
