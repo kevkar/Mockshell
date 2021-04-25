@@ -56,7 +56,7 @@ Exiting:
 
 ## Work Responsibilities
 
-Kevin Karsh
+Kevin Karch
 - Environmental Variables
 - Variable expansion
 - Aliases (including expansion and infinite loop detection)
