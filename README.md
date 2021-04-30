@@ -1,12 +1,7 @@
-# COP4600 Term Project: The Nutshell
+# Operating Systems Term Project: The Mockshell
 Team 67: Kevin Karch and Jonathan Sessa
 
 Unix command interpreter written in C/C++ using Flex and Bison.
-
-## Features Not Implemented/Known Bugs
-- Wildcard matching does not work correctly when searching a different directory than current one
-- Tilde Expansion Bug: Using tidle expasion with an non-existant user (e.g. \~none/) will result in a shell crash
-- File Name Completion was not implemented (extra credit)
 
 ## Features Implemented:
 
