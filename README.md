@@ -1,5 +1,5 @@
-# Operating Systems Term Project: The Mockshell
-Team 67: Kevin Karch and Jonathan Sessa
+The Mockshell
+By: Kevin Karch and Jonathan Sessa
 
 Unix command interpreter written in C/C++ using Flex and Bison.
 
